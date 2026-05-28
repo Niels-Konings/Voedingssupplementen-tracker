@@ -1,0 +1,1162 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0a0a0a" />
+<title>Supp Stack</title>
+<link rel="manifest" href="manifest.json" />
+<link rel="apple-touch-icon" href="icon-192.png" />
+<style>
+  :root {
+    --bg: #0a0a0a;
+    --surface: #141414;
+    --surface-2: #1c1c1c;
+    --border: #2a2a2a;
+    --text: #f4f4f0;
+    --text-dim: #8a8a85;
+    --text-dimmer: #555550;
+    --d3: #f5b800;
+    --omega: #4dd0e1;
+    --mag: #b388ff;
+    --done: #5ed26b;
+    --danger: #ff5a5a;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg); color: var(--text);
+    font-family: 'Inter', -apple-system, system-ui, sans-serif;
+    overscroll-behavior: none;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+  body {
+    padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+  }
+  .app {
+    max-width: 480px;
+    margin: 0 auto;
+    padding: 20px 18px 40px;
+  }
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 28px;
+  }
+  .brand {
+    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
+    font-size: 30px;
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .brand span {
+    font-style: italic;
+    color: var(--text-dim);
+    font-weight: 400;
+  }
+  .date {
+    font-size: 13px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .streak-bar {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+  }
+  .streak-bar .label {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .streak-bar .value {
+    font-family: 'Fraunces', serif;
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1;
+  }
+  .streak-bar .flame {
+    font-size: 24px;
+  }
+  .supp-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .supp {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 18px;
+    padding: 18px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  }
+  .supp.done {
+    background: var(--surface-2);
+    border-color: rgba(94, 210, 107, 0.25);
+  }
+  .supp:active { transform: scale(0.98); }
+  .pill {
+    width: 56px; height: 56px;
+    border-radius: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    font-size: 22px;
+    flex-shrink: 0;
+    color: #0a0a0a;
+  }
+  .pill.d3 { background: var(--d3); }
+  .pill.omega { background: var(--omega); }
+  .pill.mag { background: var(--mag); }
+  .supp-info { flex: 1; min-width: 0; }
+  .supp-name {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .supp-meta {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+  .supp-meta .dot {
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--text-dim);
+  }
+  .check {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    padding: 0;
+  }
+  .check svg { width: 18px; height: 18px; opacity: 0; transition: opacity 0.2s; }
+  .supp.done .check {
+    background: var(--done);
+    border-color: var(--done);
+  }
+  .supp.done .check svg { opacity: 1; }
+  .voorraad-warning {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    color: var(--danger);
+    font-size: 12px;
+    margin-top: 4px;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 32px 0 16px;
+  }
+  .section-title {
+    font-family: 'Fraunces', serif;
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .nav-controls {
+    display: flex;
+    gap: 8px;
+  }
+  .nav-btn {
+    width: 32px; height: 32px;
+    border-radius: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+  }
+  .nav-btn:active { transform: scale(0.92); }
+  .nav-btn svg { width: 14px; height: 14px; }
+  .week-label {
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: center;
+    margin-bottom: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+  .week-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .week-day {
+    aspect-ratio: 1;
+    border-radius: 10px;
+    background: var(--surface-2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    position: relative;
+    gap: 4px;
+    cursor: pointer;
+    border: none;
+    font-family: inherit;
+    padding: 4px;
+  }
+  .week-day:active { transform: scale(0.95); }
+  .week-day .day-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .week-day .day-num {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .week-day.future .day-num { color: var(--text-dimmer); }
+  .week-day .dots {
+    display: flex;
+    gap: 2px;
+  }
+  .week-day .dots i {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--border);
+    display: block;
+  }
+  .week-day .dots i.d { background: var(--d3); }
+  .week-day .dots i.o { background: var(--omega); }
+  .week-day .dots i.m { background: var(--mag); }
+  .week-day.today { outline: 1.5px solid var(--text); }
+  .month-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .month-title {
+    font-family: 'Fraunces', serif;
+    font-size: 18px;
+    font-weight: 600;
+  }
+  .month-grid {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 14px;
+  }
+  .month-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+  .month-weekdays span {
+    text-align: center;
+    font-size: 10px;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .month-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+  }
+  .month-day {
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    padding: 0;
+    font-family: inherit;
+  }
+  .month-day:active { transform: scale(0.9); }
+  .month-day.empty { pointer-events: none; }
+  .month-day.future { opacity: 0.35; pointer-events: none; }
+  .month-day svg {
+    width: 100%;
+    height: 100%;
+    display: block;
+  }
+  .month-day .day-num {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .month-day.today::after {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border: 1.5px solid var(--text);
+    border-radius: 50%;
+    pointer-events: none;
+  }
+  .legend {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+  .legend-item .swatch {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+  }
+  .swatch.d3 { background: var(--d3); }
+  .swatch.omega { background: var(--omega); }
+  .swatch.mag { background: var(--mag); }
+  .settings-btn {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--text-dim);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .settings-btn:hover { color: var(--text); }
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 100;
+    display: none;
+    align-items: flex-end;
+    justify-content: center;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal {
+    background: var(--surface);
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    width: 100%;
+    max-width: 480px;
+    padding: 24px 20px calc(24px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    max-height: 85vh;
+    overflow-y: auto;
+  }
+  .modal h2 {
+    font-family: 'Fraunces', serif;
+    font-weight: 600;
+    margin: 0 0 4px;
+    font-size: 22px;
+  }
+  .modal-sub {
+    color: var(--text-dim);
+    font-size: 13px;
+    margin-bottom: 20px;
+  }
+  .form-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+  }
+  .form-row label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-dim);
+  }
+  .form-row input {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    color: var(--text);
+    border-radius: 10px;
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 16px;
+  }
+  .form-row input:focus { outline: 1px solid var(--text-dim); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 8px;
+  }
+  .btn {
+    flex: 1;
+    padding: 14px;
+    border-radius: 12px;
+    border: none;
+    font-family: inherit;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+  .btn-primary { background: var(--text); color: var(--bg); }
+  .btn-secondary { background: var(--surface-2); color: var(--text); border: 1px solid var(--border); }
+  .supp-config {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    margin-bottom: 12px;
+  }
+  .supp-config-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+  .supp-config-header .pill { width: 36px; height: 36px; font-size: 14px; border-radius: 10px; }
+  .supp-config-header .name { font-weight: 600; }
+  .config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .day-edit-row {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .day-edit-row:active { transform: scale(0.99); }
+  .day-edit-row .pill { width: 40px; height: 40px; font-size: 16px; border-radius: 12px; }
+  .day-edit-row .day-name { flex: 1; font-weight: 600; }
+  .day-edit-row .day-status { font-size: 12px; color: var(--text-dim); }
+  .day-edit-row.taken .day-status { color: var(--done); }
+  .notif-banner {
+    background: var(--surface-2);
+    border: 1px dashed var(--border);
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: var(--text-dim);
+    margin-bottom: 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+  }
+  .notif-banner button {
+    background: var(--text);
+    color: var(--bg);
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .version {
+    text-align: center;
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 32px;
+    letter-spacing: 0.05em;
+  }
+  @keyframes pop {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1); }
+  }
+  .supp.just-done { animation: pop 0.3s ease-out; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="brand">Supp <span>stack</span></div>
+    <div class="date" id="todayDate"></div>
+  </header>
+
+  <div id="notifBanner" class="notif-banner" style="display:none">
+    <span>Notificaties uit. Zet ze aan om reminders te krijgen.</span>
+    <button id="enableNotif">Aanzetten</button>
+  </div>
+
+  <div class="streak-bar">
+    <div>
+      <div class="label">Huidige streak</div>
+      <div class="value"><span id="streakValue">0</span> dagen</div>
+    </div>
+    <div class="flame" id="flame">🔥</div>
+  </div>
+
+  <div class="supp-list" id="suppList"></div>
+
+  <div class="section-header">
+    <div class="section-title">Week</div>
+    <div class="nav-controls">
+      <button class="nav-btn" id="weekPrev" aria-label="Vorige week">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="nav-btn" id="weekNext" aria-label="Volgende week">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="week-label" id="weekLabel"></div>
+  <div class="week-grid" id="weekGrid"></div>
+
+  <div class="section-header">
+    <div class="section-title">Maand</div>
+    <div class="nav-controls">
+      <button class="nav-btn" id="monthPrev" aria-label="Vorige maand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <button class="nav-btn" id="monthNext" aria-label="Volgende maand">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+  </div>
+  <div class="month-header">
+    <div class="month-title" id="monthTitle"></div>
+  </div>
+  <div class="month-grid">
+    <div class="month-weekdays">
+      <span>M</span><span>D</span><span>W</span><span>D</span><span>V</span><span>Z</span><span>Z</span>
+    </div>
+    <div class="month-days" id="monthDays"></div>
+    <div class="legend">
+      <div class="legend-item"><div class="swatch d3"></div>D3</div>
+      <div class="legend-item"><div class="swatch omega"></div>Omega-3</div>
+      <div class="legend-item"><div class="swatch mag"></div>Magnesium</div>
+    </div>
+  </div>
+
+  <div style="display:flex; justify-content:center; margin-top:24px">
+    <button class="settings-btn" id="openSettings">Instellingen</button>
+  </div>
+
+  <div class="version">v1.0.2</div>
+</div>
+
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal">
+    <h2>Instellingen</h2>
+    <div class="modal-sub">Tijden en voorraad per supplement</div>
+    <div id="settingsContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary" id="closeSettings">Sluiten</button>
+      <button class="btn btn-primary" id="saveSettings">Opslaan</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="dayModal">
+  <div class="modal">
+    <h2 id="dayModalTitle">Dag bewerken</h2>
+    <div class="modal-sub" id="dayModalSub"></div>
+    <div id="dayModalContent"></div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" id="closeDayModal">Klaar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const APP_VERSION = '1.0.2';
+
+const DEFAULT_CONFIG = {
+  supplements: [
+    { id: 'd3', name: 'Vitamine D3', dose: '25mcg', time: '18:30', pillClass: 'd3', short: 'D3', voorraad: 30, voorraadStart: 60 },
+    { id: 'omega', name: 'Omega-3', dose: '1000mg', time: '18:30', pillClass: 'omega', short: 'O3', voorraad: 30, voorraadStart: 60 },
+    { id: 'mag', name: 'Magnesium', dose: '300mg citraat', time: '00:00', pillClass: 'mag', short: 'Mg', voorraad: 30, voorraadStart: 60 }
+  ]
+};
+
+const STORAGE_KEYS = {
+  config: 'suppstack_config_v1',
+  log: 'suppstack_log_v1'
+};
+
+function loadConfig() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.config);
+    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    const parsed = JSON.parse(raw);
+    if (!parsed.supplements) return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+    return parsed;
+  } catch {
+    return JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+  }
+}
+
+function saveConfig(cfg) {
+  localStorage.setItem(STORAGE_KEYS.config, JSON.stringify(cfg));
+}
+
+function loadLog() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEYS.log);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+}
+
+function saveLog(log) {
+  localStorage.setItem(STORAGE_KEYS.log, JSON.stringify(log));
+}
+
+function dateKey(d) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+function todayKey() {
+  return dateKey(new Date());
+}
+
+function formatDate(d) {
+  const days = ['Zon', 'Maa', 'Din', 'Woe', 'Don', 'Vri', 'Zat'];
+  const months = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function formatDateLong(d) {
+  const days = ['Zondag', 'Maandag', 'Dinsdag', 'Woensdag', 'Donderdag', 'Vrijdag', 'Zaterdag'];
+  const months = ['januari', 'februari', 'maart', 'april', 'mei', 'juni', 'juli', 'augustus', 'september', 'oktober', 'november', 'december'];
+  return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]}`;
+}
+
+function getMonday(d) {
+  const result = new Date(d);
+  const day = (result.getDay() + 6) % 7;
+  result.setDate(result.getDate() - day);
+  result.setHours(0, 0, 0, 0);
+  return result;
+}
+
+let config = loadConfig();
+let log = loadLog();
+let weekStart = getMonday(new Date());
+let monthView = new Date();
+monthView.setDate(1);
+let activeDayKey = null;
+
+function isDoneOnDate(key, suppId) {
+  return !!(log[key] && log[key][suppId]);
+}
+
+function toggleSuppForDate(key, suppId) {
+  const wasToday = key === todayKey();
+  if (!log[key]) log[key] = {};
+  if (log[key][suppId]) {
+    delete log[key][suppId];
+    if (wasToday) {
+      const supp = config.supplements.find(s => s.id === suppId);
+      if (supp) supp.voorraad = Math.min(supp.voorraad + 1, supp.voorraadStart);
+    }
+  } else {
+    log[key][suppId] = new Date().toISOString();
+    if (wasToday) {
+      const supp = config.supplements.find(s => s.id === suppId);
+      if (supp && supp.voorraad > 0) supp.voorraad -= 1;
+    }
+  }
+  saveLog(log);
+  saveConfig(config);
+}
+
+function calcStreak() {
+  let streak = 0;
+  const d = new Date();
+  while (true) {
+    const key = dateKey(d);
+    const dayLog = log[key];
+    const allDone = config.supplements.every(s => dayLog && dayLog[s.id]);
+    if (allDone) {
+      streak++;
+      d.setDate(d.getDate() - 1);
+    } else {
+      if (key === todayKey()) {
+        d.setDate(d.getDate() - 1);
+        continue;
+      }
+      break;
+    }
+  }
+  return streak;
+}
+
+function renderSupps() {
+  const list = document.getElementById('suppList');
+  list.innerHTML = '';
+  const today = todayKey();
+  config.supplements.forEach(s => {
+    const done = isDoneOnDate(today, s.id);
+    const lowStock = s.voorraad <= 7;
+    const div = document.createElement('div');
+    div.className = 'supp' + (done ? ' done' : '');
+    div.innerHTML = `
+      <div class="pill ${s.pillClass}">${s.short}</div>
+      <div class="supp-info">
+        <div class="supp-name">${s.name}</div>
+        <div class="supp-meta">
+          <span>${s.dose}</span>
+          <span class="dot"></span>
+          <span>${s.time}</span>
+        </div>
+        ${lowStock ? `<div class="voorraad-warning">⚠ Nog ${s.voorraad} over</div>` : ''}
+      </div>
+      <button class="check" data-id="${s.id}" aria-label="Toggle ${s.name}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    `;
+    list.appendChild(div);
+    if (done) {
+      const el = div;
+      setTimeout(() => el.classList.add('just-done'), 0);
+      setTimeout(() => el.classList.remove('just-done'), 300);
+    }
+  });
+  list.querySelectorAll('.check').forEach(btn => {
+    btn.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleSuppForDate(todayKey(), btn.dataset.id);
+      render();
+    });
+  });
+}
+
+function renderWeek() {
+  const grid = document.getElementById('weekGrid');
+  const label = document.getElementById('weekLabel');
+  grid.innerHTML = '';
+  const dayLabels = ['M', 'D', 'W', 'D', 'V', 'Z', 'Z'];
+  const monthNames = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
+  const today = todayKey();
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+
+  const sunday = new Date(weekStart);
+  sunday.setDate(weekStart.getDate() + 6);
+  let labelText;
+  if (weekStart.getMonth() === sunday.getMonth()) {
+    labelText = `${weekStart.getDate()} - ${sunday.getDate()} ${monthNames[weekStart.getMonth()]}`;
+  } else {
+    labelText = `${weekStart.getDate()} ${monthNames[weekStart.getMonth()]} - ${sunday.getDate()} ${monthNames[sunday.getMonth()]}`;
+  }
+  const thisWeekMonday = getMonday(new Date());
+  if (weekStart.getTime() === thisWeekMonday.getTime()) labelText = 'Deze week';
+  else {
+    const diff = Math.round((weekStart - thisWeekMonday) / (7 * 24 * 60 * 60 * 1000));
+    if (diff === -1) labelText = 'Vorige week';
+    else if (diff === 1) labelText = 'Volgende week';
+  }
+  label.textContent = labelText;
+
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(weekStart);
+    d.setDate(weekStart.getDate() + i);
+    const key = dateKey(d);
+    const dayLog = log[key] || {};
+    const isToday = key === today;
+    const isFuture = d > todayDate;
+    const btn = document.createElement('button');
+    btn.className = 'week-day' + (isToday ? ' today' : '') + (isFuture ? ' future' : '');
+    btn.innerHTML = `
+      <div class="day-label">${dayLabels[i]}</div>
+      <div class="day-num">${d.getDate()}</div>
+      <div class="dots">
+        <i class="${dayLog.d3 ? 'd' : ''}"></i>
+        <i class="${dayLog.omega ? 'o' : ''}"></i>
+        <i class="${dayLog.mag ? 'm' : ''}"></i>
+      </div>
+    `;
+    if (!isFuture) {
+      btn.addEventListener('click', () => openDayModal(key, d));
+    } else {
+      btn.style.cursor = 'default';
+    }
+    grid.appendChild(btn);
+  }
+}
+
+function renderStreak() {
+  const s = calcStreak();
+  document.getElementById('streakValue').textContent = s;
+  const flame = document.getElementById('flame');
+  if (s === 0) flame.style.opacity = '0.3';
+  else if (s < 7) flame.style.opacity = '0.7';
+  else flame.style.opacity = '1';
+}
+
+function renderMonth() {
+  const monthNames = ['Januari', 'Februari', 'Maart', 'April', 'Mei', 'Juni', 'Juli', 'Augustus', 'September', 'Oktober', 'November', 'December'];
+  document.getElementById('monthTitle').textContent = `${monthNames[monthView.getMonth()]} ${monthView.getFullYear()}`;
+
+  const grid = document.getElementById('monthDays');
+  grid.innerHTML = '';
+
+  const year = monthView.getFullYear();
+  const month = monthView.getMonth();
+  const firstDay = new Date(year, month, 1);
+  const firstDayOffset = (firstDay.getDay() + 6) % 7;
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const todayDate = new Date();
+  todayDate.setHours(0, 0, 0, 0);
+  const today = todayKey();
+
+  for (let i = 0; i < firstDayOffset; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'month-day empty';
+    grid.appendChild(empty);
+  }
+
+  const colors = {
+    d3: '#f5b800',
+    omega: '#4dd0e1',
+    mag: '#b388ff'
+  };
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const d = new Date(year, month, day);
+    const key = dateKey(d);
+    const dayLog = log[key] || {};
+    const isToday = key === today;
+    const isFuture = d > todayDate;
+
+    const btn = document.createElement('button');
+    btn.className = 'month-day' + (isToday ? ' today' : '') + (isFuture ? ' future' : '');
+
+    const cx = 50, cy = 50, r = 40;
+    const segments = [
+      { id: 'd3', color: colors.d3, taken: !!dayLog.d3 },
+      { id: 'omega', color: colors.omega, taken: !!dayLog.omega },
+      { id: 'mag', color: colors.mag, taken: !!dayLog.mag }
+    ];
+
+    function arcPath(startAngle, endAngle, radius) {
+      const start = {
+        x: cx + radius * Math.cos(startAngle),
+        y: cy + radius * Math.sin(startAngle)
+      };
+      const end = {
+        x: cx + radius * Math.cos(endAngle),
+        y: cy + radius * Math.sin(endAngle)
+      };
+      const largeArc = endAngle - startAngle > Math.PI ? 1 : 0;
+      return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArc} 1 ${end.x} ${end.y} Z`;
+    }
+
+    let svg = `<svg viewBox="0 0 100 100">`;
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="#1c1c1c"/>`;
+    const startBase = -Math.PI / 2;
+    const sliceSize = (2 * Math.PI) / 3;
+    segments.forEach((seg, idx) => {
+      const a1 = startBase + idx * sliceSize;
+      const a2 = a1 + sliceSize;
+      const fill = seg.taken ? seg.color : 'transparent';
+      svg += `<path d="${arcPath(a1, a2, r)}" fill="${fill}"/>`;
+    });
+    svg += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="#2a2a2a" stroke-width="1"/>`;
+    svg += `</svg>`;
+
+    btn.innerHTML = `${svg}<div class="day-num">${day}</div>`;
+    if (!isFuture) {
+      btn.addEventListener('click', () => openDayModal(key, d));
+    }
+    grid.appendChild(btn);
+  }
+}
+
+function openDayModal(key, d) {
+  activeDayKey = key;
+  document.getElementById('dayModalTitle').textContent = formatDateLong(d);
+  document.getElementById('dayModalSub').textContent = 'Tik om aan te passen';
+  renderDayModalContent();
+  document.getElementById('dayModal').classList.add('open');
+  pushModalState('dayModal');
+}
+
+function renderDayModalContent() {
+  const wrap = document.getElementById('dayModalContent');
+  wrap.innerHTML = '';
+  config.supplements.forEach(s => {
+    const taken = isDoneOnDate(activeDayKey, s.id);
+    const row = document.createElement('div');
+    row.className = 'day-edit-row' + (taken ? ' taken' : '');
+    row.innerHTML = `
+      <div class="pill ${s.pillClass}">${s.short}</div>
+      <div class="day-name">${s.name}</div>
+      <div class="day-status">${taken ? 'Ingenomen' : 'Niet ingenomen'}</div>
+      <button class="check" data-id="${s.id}" style="${taken ? 'background:var(--done);border-color:var(--done);' : ''}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="opacity:${taken ? 1 : 0}"><polyline points="20 6 9 17 4 12"/></svg>
+      </button>
+    `;
+    row.addEventListener('click', () => {
+      toggleSuppForDate(activeDayKey, s.id);
+      renderDayModalContent();
+      render();
+    });
+    wrap.appendChild(row);
+  });
+}
+
+function render() {
+  document.getElementById('todayDate').textContent = formatDate(new Date());
+  renderSupps();
+  renderStreak();
+  renderWeek();
+  renderMonth();
+  updateNotifBanner();
+}
+
+function renderSettings() {
+  const wrap = document.getElementById('settingsContent');
+  wrap.innerHTML = '';
+  config.supplements.forEach((s, idx) => {
+    const block = document.createElement('div');
+    block.className = 'supp-config';
+    block.innerHTML = `
+      <div class="supp-config-header">
+        <div class="pill ${s.pillClass}">${s.short}</div>
+        <div class="name">${s.name}</div>
+      </div>
+      <div class="config-grid">
+        <div class="form-row" style="margin-bottom:0">
+          <label>Tijd</label>
+          <input type="time" data-idx="${idx}" data-field="time" value="${s.time}" />
+        </div>
+        <div class="form-row" style="margin-bottom:0">
+          <label>Voorraad</label>
+          <input type="number" min="0" data-idx="${idx}" data-field="voorraad" value="${s.voorraad}" />
+        </div>
+      </div>
+    `;
+    wrap.appendChild(block);
+  });
+}
+
+document.getElementById('weekPrev').addEventListener('click', () => {
+  weekStart.setDate(weekStart.getDate() - 7);
+  weekStart = new Date(weekStart);
+  renderWeek();
+});
+document.getElementById('weekNext').addEventListener('click', () => {
+  const next = new Date(weekStart);
+  next.setDate(next.getDate() + 7);
+  const thisMonday = getMonday(new Date());
+  if (next > thisMonday) return;
+  weekStart = next;
+  renderWeek();
+});
+
+document.getElementById('monthPrev').addEventListener('click', () => {
+  monthView.setMonth(monthView.getMonth() - 1);
+  monthView = new Date(monthView);
+  renderMonth();
+});
+document.getElementById('monthNext').addEventListener('click', () => {
+  const next = new Date(monthView);
+  next.setMonth(next.getMonth() + 1);
+  const now = new Date();
+  if (next.getFullYear() > now.getFullYear() || (next.getFullYear() === now.getFullYear() && next.getMonth() > now.getMonth())) return;
+  monthView = next;
+  renderMonth();
+});
+
+document.getElementById('openSettings').addEventListener('click', () => {
+  renderSettings();
+  document.getElementById('settingsModal').classList.add('open');
+  pushModalState('settingsModal');
+});
+
+document.getElementById('closeSettings').addEventListener('click', () => {
+  closeModalViaHistory('settingsModal');
+});
+
+document.getElementById('closeDayModal').addEventListener('click', () => {
+  closeModalViaHistory('dayModal');
+});
+
+document.getElementById('saveSettings').addEventListener('click', () => {
+  document.querySelectorAll('#settingsContent input').forEach(inp => {
+    const idx = parseInt(inp.dataset.idx);
+    const field = inp.dataset.field;
+    if (field === 'voorraad') {
+      config.supplements[idx][field] = parseInt(inp.value) || 0;
+      config.supplements[idx].voorraadStart = Math.max(config.supplements[idx].voorraadStart, config.supplements[idx].voorraad);
+    } else {
+      config.supplements[idx][field] = inp.value;
+    }
+  });
+  saveConfig(config);
+  scheduleNotifications();
+  closeModalViaHistory('settingsModal');
+  render();
+});
+
+[document.getElementById('settingsModal'), document.getElementById('dayModal')].forEach(modal => {
+  modal.addEventListener('click', e => {
+    if (e.target === modal) {
+      closeModalViaHistory(modal.id);
+    }
+  });
+});
+
+async function enableNotifications() {
+  if (!('Notification' in window)) {
+    alert('Notificaties niet ondersteund op dit apparaat.');
+    return;
+  }
+  const perm = await Notification.requestPermission();
+  if (perm === 'granted') {
+    scheduleNotifications();
+    new Notification('Supp Stack', { body: 'Notificaties staan aan' });
+  }
+  updateNotifBanner();
+}
+
+document.getElementById('enableNotif').addEventListener('click', enableNotifications);
+
+function updateNotifBanner() {
+  const banner = document.getElementById('notifBanner');
+  if (!('Notification' in window)) {
+    banner.style.display = 'none';
+    return;
+  }
+  banner.style.display = Notification.permission === 'granted' ? 'none' : 'flex';
+}
+
+const scheduledTimeouts = [];
+
+function scheduleNotifications() {
+  scheduledTimeouts.forEach(t => clearTimeout(t));
+  scheduledTimeouts.length = 0;
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const groups = {};
+  config.supplements.forEach(s => {
+    if (!groups[s.time]) groups[s.time] = [];
+    groups[s.time].push(s);
+  });
+
+  Object.keys(groups).forEach(time => {
+    const [h, m] = time.split(':').map(Number);
+    const now = new Date();
+    const target = new Date();
+    target.setHours(h, m, 0, 0);
+    if (target <= now) target.setDate(target.getDate() + 1);
+    const ms = target - now;
+    if (ms > 0 && ms < 24 * 60 * 60 * 1000) {
+      const t = setTimeout(() => {
+        const supps = groups[time];
+        const undone = supps.filter(s => !isDoneOnDate(todayKey(), s.id));
+        if (undone.length > 0) {
+          const names = undone.map(s => s.name).join(' + ');
+          new Notification('Tijd voor je supplementen', { body: names });
+        }
+        scheduleNotifications();
+      }, ms);
+      scheduledTimeouts.push(t);
+    }
+  });
+}
+
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js').catch(() => {});
+}
+
+const modalStack = [];
+
+function pushModalState(modalId) {
+  modalStack.push(modalId);
+  history.pushState({ modal: modalId, depth: modalStack.length }, '');
+}
+
+function closeModalById(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.classList.remove('open');
+  if (modalId === 'dayModal') activeDayKey = null;
+}
+
+function closeModalViaHistory(modalId) {
+  const idx = modalStack.lastIndexOf(modalId);
+  if (idx === -1) {
+    closeModalById(modalId);
+    return;
+  }
+  history.back();
+}
+
+window.addEventListener('popstate', () => {
+  if (modalStack.length > 0) {
+    const closed = modalStack.pop();
+    closeModalById(closed);
+  } else {
+    history.pushState({ home: true }, '');
+  }
+});
+
+history.replaceState({ home: true }, '');
+
+render();
+scheduleNotifications();
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    log = loadLog();
+    config = loadConfig();
+    render();
+    scheduleNotifications();
+  }
+});
+</script>
+</body>
+</html>
